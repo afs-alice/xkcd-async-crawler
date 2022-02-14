@@ -1,17 +1,39 @@
 import asyncio
 import unittest
+import json
 
 from os import path, rmdir, remove
 from src.xkcd_async_downloader import XkcdAsyncDownloader
-from unittest.mock import patch, mock_open
+from unittest.mock import MagicMock, patch, mock_open
 
-def async_test(coro):
+def async_test(coroutine):
     def wrapped(*args, **kwargs):
         try:
-            asyncio.run(coro(*args, **kwargs))
+            asyncio.run(coroutine(*args, **kwargs))
         except InterruptedError:
             pass
     return wrapped
+
+async def mock_request(status: int = 200, json: dict = {}, read: bytes = b'',
+                       headers: dict = {}) -> MagicMock:
+    response = MagicMock()
+    response.status = status
+    response.json = lambda: json
+    response.read = lambda: read
+    return response
+
+def get_api_json_fixture() -> dict:
+    with open('src/test/src/fixtures/api_content_file.json') as file:
+        return json.loads(file.read())
+
+def get_headers_img_file_fixture() -> dict:
+    with open('src/test/src/fixtures/headers_img_file.json') as file:
+        return json.loads(file.read()) 
+
+def get_headers_no_img_file_fixture() -> dict:
+    with open('src/test/src/fixtures/headers_no_img_file.json') as file:
+        return json.loads(file.read()) 
+
 
 class TestCreateDirectory(unittest.TestCase):
     def setUp(self) -> None:
@@ -21,7 +43,7 @@ class TestCreateDirectory(unittest.TestCase):
     def tearDown(self) -> None:
         try:
             rmdir(self.instance.DIRECTORY)
-        except:
+        except FileNotFoundError:
             pass
     
     def test_create_directory(self):
@@ -75,7 +97,7 @@ class TestSaveFileInLocalStorage(unittest.TestCase):
     def tearDown(self) -> None:
         try:
             remove(self.md5_img_name_file)
-        except:
+        except FileNotFoundError:
             pass
     
     @async_test   
@@ -115,7 +137,23 @@ class TestSaveFileInLocalStorage(unittest.TestCase):
                                                      f'path: {self.file_path}')
 
 
-        
+
+class TestGetLastIndex(unittest.TestCase):
+    def setUp(self) -> None:
+        self.instance = XkcdAsyncDownloader()
+
+
+   
+# def get_api_json_fixture() -> dict:
+#     with open('src/test/src/fixture/api_content_file.json') as file:
+#         return json.loads(file.read())
+
+# def  -> dict:
+#     with open('src/test/src/fixture/headers_img_file.json') as file:
+#         return json.loads(file.read()) 
+
+print(get_api_json_fixture())
+    
 
 
 if __name__ == '__main__':

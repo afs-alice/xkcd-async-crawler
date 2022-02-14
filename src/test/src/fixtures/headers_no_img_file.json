@@ -1,0 +1,16 @@
+{
+    "Connection": "keep-alive",
+    "Content-Length": "123",
+    "Server": "nginx",
+    "Content-Type": "text/html; charset=UTF-8",
+    "Content-Encoding": "gzip",
+    "Via": "1.1 varnish, 1.1 varnish",
+    "Accept-Ranges": "bytes",
+    "Date": "Mon, 14 Feb 2022 20:38:42 GMT",
+    "Age": "25",
+    "X-Served-By": "cache-dfw18661-DFW, cache-fty21332-FTY",
+    "X-Cache": "HIT, HIT",
+    "X-Cache-Hits": "1, 1",
+    "X-Timer": "S1644871122.391510,VS0,VE0",
+    "Vary": "Accept-Encoding"
+}
