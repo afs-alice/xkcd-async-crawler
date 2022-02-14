@@ -119,13 +119,12 @@ class XkcdAsyncDownloader:
         return last_index
 
     async def __save_file_in_local_storage(self, comic_id: int, file_content: bytes,
-                                           file_extension: str) -> bool:
+                                           file_extension: str) -> None:
         file_name = f'{md5(file_content).hexdigest()}.{file_extension}'
         file_path = f'{self.DIRECTORY}/{file_name}'
 
         if os.path.isfile(file_path):
             logging.info(f'File of comic id: {comic_id} alredy exits with name: {file_name}')
-            return False
 
         try:
             async with aiofiles.open(file_path, 'wb') as f:
@@ -135,13 +134,12 @@ class XkcdAsyncDownloader:
                 f'Error {type(e).__name__} when save file image for '
                 f'comic id: {comic_id} with path: {file_path}'
             )
-            return False
 
         logging.info(f'Comic id: {comic_id} has been saved with name: {file_name}')
         self.__count_of_saved_files += 1
         return True
 
-    def _create_directory(self) -> bool:
+    def __create_directory(self) -> bool:
         try:
             os.mkdir(self.DIRECTORY)
         except FileExistsError:
