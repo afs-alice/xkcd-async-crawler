@@ -41,7 +41,7 @@ class XkcdAsyncDownloader:
             await asyncio.gather(*tasks)
 
     async def __task_of_downloader(self, comic_id: int, session: aiohttp.client.ClientSession) -> None:
-        comic_image_url = await self.__get_image_comic_url(comic_id, session)
+        comic_image_url = await self.__get_comic_image_url(comic_id, session)
         if not comic_image_url:
             return
 
@@ -78,7 +78,7 @@ class XkcdAsyncDownloader:
         }
         return image_file_data
 
-    async def __get_image_comic_url(self, comic_id: int,
+    async def __get_comic_image_url(self, comic_id: int,
                                     session: aiohttp.client.ClientSession) -> Union[bool, str]:
         try:
             response_img_url = await session.request('GET', self.URL_API.format(comic_id))
