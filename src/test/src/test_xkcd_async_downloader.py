@@ -1,19 +1,15 @@
 import asyncio
-from asyncore import read
-from email import header
-from http.client import InvalidURL
-from importlib.resources import contents
-from telnetlib import STATUS
-from time import sleep
 import unittest
 import json
-from urllib.error import HTTPError, URLError
 
 from aiohttp.client import ClientSession
+from async_class import AsyncClass, AsyncObject, task, link
+from http.client import InvalidURL
 from os import path, rmdir, remove
 from src.xkcd_async_downloader import XkcdAsyncDownloader
+from time import sleep
 from unittest.mock import MagicMock, patch
-from async_class import AsyncClass, AsyncObject, task, link
+from urllib.error import HTTPError, URLError
 
 
 def async_test(coroutine):
@@ -313,7 +309,7 @@ class TestGetImageFile(unittest.TestCase):
 
     @patch('aiohttp.client.ClientSession.request')
     @async_test
-    async def teste_return_image_file_data(self, mock_iorequest):
+    async def test_return_image_file_data(self, mock_iorequest):
         mock_iorequest.return_value = MockResponse(read=self.img_file_content, headers=self.headers)
         method_return = await self.instance._XkcdAsyncDownloader__get_image_file(
             self.comic_id, self.image_url, ClientSession()
