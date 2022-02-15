@@ -68,13 +68,13 @@ class XkcdAsyncDownloader:
             )
             return False
 
-        if not response_img_file.headers['Content-type'].startswith('image'):
+        if not response_img_file.headers['Content-Type'].startswith('image'):
             logging.warning(f'The file for comic id: {comic_id} is not a image')
             return False
 
         image_file_data = {
             'content': await response_img_file.read(),
-            'extension': response_img_file.headers['Content-type'].split('/')[1]
+            'extension': response_img_file.headers['Content-Type'].split('/')[1]
         }
         return image_file_data
 
