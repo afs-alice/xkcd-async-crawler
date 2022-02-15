@@ -1,10 +1,16 @@
 import asyncio
+from http.client import InvalidURL
+from time import sleep
 import unittest
 import json
+from urllib.error import HTTPError, URLError
 
+from aiohttp.client import ClientSession
 from os import path, rmdir, remove
 from src.xkcd_async_downloader import XkcdAsyncDownloader
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import MagicMock, patch
+from async_class import AsyncClass, AsyncObject, task, link
+
 
 def async_test(coroutine):
     def wrapped(*args, **kwargs):
@@ -14,13 +20,21 @@ def async_test(coroutine):
             pass
     return wrapped
 
-async def mock_request(status: int = 200, json: dict = {}, read: bytes = b'',
-                       headers: dict = {}) -> MagicMock:
-    response = MagicMock()
-    response.status = status
-    response.json = lambda: json
-    response.read = lambda: read
-    return response
+class MockResponse(AsyncClass):
+    async def __ainit__(self, status: int = 200, json: dict = {}, read: bytes = b'',
+                       headers: dict = {}) -> None:
+        self.status = status
+        self.headers = headers
+        self.json_content = json
+        self.read_content = read
+   
+    async def json(self):
+        sleep(0)
+        return self.json_content
+    
+    async def read(self):
+        sleep(0)
+        return self.read_content
 
 def get_api_json_fixture() -> dict:
     with open('src/test/src/fixtures/api_content_file.json') as file:
@@ -119,8 +133,8 @@ class TestSaveFileInLocalStorage(unittest.TestCase):
             await self.instance._XkcdAsyncDownloader__save_file_in_local_storage(
                 self.comic_id, self.file_data['content'], self.file_data['extension']
             )
-        self.assertEqual(captured_log.output[0], f'INFO:root:File of comic id: {self.comic_id} alredy exits with '
-                                                 f'name: {self.md5_img_name_file}')
+        self.assertEqual(captured_log.output[0], f'INFO:root:File of comic id: {self.comic_id} alredy '
+                                                 f'exits with name: {self.md5_img_name_file}')
 
     @patch('aiofiles.open')
     @async_test
@@ -132,29 +146,51 @@ class TestSaveFileInLocalStorage(unittest.TestCase):
                  await self.instance._XkcdAsyncDownloader__save_file_in_local_storage(
                     self.comic_id, self.file_data['content'], self.file_data['extension']
                  )
-            self.assertEqual(captured_log.output[0], f'ERROR:root:Error {exception.__name__} when save file image for '
+            self.assertEqual(captured_log.output[0], f'ERROR:root:Error {exception.__name__} '
+                                                     'when save file image for '
                                                      f'comic id: {self.comic_id} with '
                                                      f'path: {self.file_path}')
-
 
 
 class TestGetLastIndex(unittest.TestCase):
     def setUp(self) -> None:
         self.instance = XkcdAsyncDownloader()
-
-
-   
-# def get_api_json_fixture() -> dict:
-#     with open('src/test/src/fixture/api_content_file.json') as file:
-#         return json.loads(file.read())
-
-# def  -> dict:
-#     with open('src/test/src/fixture/headers_img_file.json') as file:
-#         return json.loads(file.read()) 
-
-print(get_api_json_fixture())
+        self.expected_last_index = 2579
     
+    @patch('aiohttp.client.ClientSession.request')
+    @async_test
+    async def test_return_last_index_and_display_info_log(self, mock_iorequest):
+        mock_iorequest.return_value = MockResponse(json = get_api_json_fixture())
+        with self.assertLogs() as captured_log:
+            method_return = await self.instance._XkcdAsyncDownloader__get_last_index(ClientSession())
+        self.assertEqual(captured_log.output[0],f'INFO:root:Last comic index (comic id): {method_return}')
+        self.assertEqual(self.expected_last_index, method_return)
+    
+    @patch('aiohttp.client.ClientSession.request')
+    @async_test
+    async def test_return_false_and_display_error_log_when_exceptions_are_raised(self, mock_iorequest):
+        known_exceptions = [InvalidURL, TimeoutError, ConnectionError]
+        for exception in known_exceptions:
+            mock_iorequest.side_effect = exception
+            with self.assertLogs() as captured_log:
+                method_return = await self.instance._XkcdAsyncDownloader__get_last_index(ClientSession())
+            self.assertFalse(method_return)
+            self.assertEqual(captured_log.output[0],f'ERROR:root:Error {exception.__name__} in '
+                                                    'request last comic '
+                                                    'index from xkcd API')
+    
+    @patch('aiohttp.client.ClientSession.request')
+    @async_test
+    async def test_return_false_and_display_error_log_when_status_code_is_not_200(self, mock_iorequest):
+        mock_iorequest.return_value = MockResponse(status=404)
+        with self.assertLogs() as captured_log:
+            method_return = await self.instance._XkcdAsyncDownloader__get_last_index(ClientSession())
+        self.assertFalse(method_return)
+        self.assertEqual(captured_log.output[0],f'ERROR:root:Error {mock_iorequest.return_value.status} '
+                                                'when getting last comic '
+                                                'index from xkcd API')
 
+    
 
 if __name__ == '__main__':
     unittest.main()
