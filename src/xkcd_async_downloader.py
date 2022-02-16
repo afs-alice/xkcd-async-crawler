@@ -5,7 +5,6 @@ import os
 import aiofiles
 import aiohttp
 
-from contextlib import contextmanager
 from hashlib import md5
 from typing import Union
 
@@ -16,7 +15,7 @@ class XkcdAsyncDownloader:
     TIMEOUT: int = 30
 
     def __init__(self) -> None:
-        logging.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', level=logging.WARNING)
+        logging.basicConfig(format='[%(asctime)s][%(levelname)s] %(message)s', level=logging.INFO)
         self.__count_of_saved_files = 0
 
     @property
@@ -24,7 +23,7 @@ class XkcdAsyncDownloader:
         return self.__count_of_saved_files
 
     def make_download(self) -> None:
-        if not self._create_directory():
+        if not self.__create_directory():
             return
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.__create_tasks_of_downloader())
@@ -52,8 +51,9 @@ class XkcdAsyncDownloader:
         await self.__save_file_in_local_storage(comic_id, image_file_data['content'],
                                                 image_file_data['extension'])
 
-    async def __get_image_file(self, comic_id: int, image_url: str,
-                               session: aiohttp.client.ClientSession) -> Union[bool, dict]:
+    async def __get_image_file(
+        self, comic_id: int, image_url: str, session: aiohttp.client.ClientSession
+    ) -> Union[bool, dict]:
         try:
             response_img_file = await session.request('GET', image_url)
         except Exception as e:
@@ -62,7 +62,7 @@ class XkcdAsyncDownloader:
             )
             return False
 
-        if response_img_file.status is not 200:
+        if response_img_file.status != 200:
             logging.warning(
                 f'Error {response_img_file.status} in request for comic id image file: {comic_id}'
             )
@@ -78,15 +78,16 @@ class XkcdAsyncDownloader:
         }
         return image_file_data
 
-    async def __get_comic_image_url(self, comic_id: int,
-                                    session: aiohttp.client.ClientSession) -> Union[bool, str]:
+    async def __get_comic_image_url(
+        self, comic_id: int, session: aiohttp.client.ClientSession
+    ) -> Union[bool, str]:
         try:
             response_img_url = await session.request('GET', self.URL_API.format(comic_id))
         except Exception as e:
             logging.warning(f'Error {type(e).__name__} in request for comic id image file: {comic_id}')
             return False
 
-        if response_img_url.status is not 200:
+        if response_img_url.status != 200:
             logging.warning(
                 f'Error {response_img_url.status} in request for comic id image file: {comic_id}'
             )
@@ -109,7 +110,7 @@ class XkcdAsyncDownloader:
             )
             return False
 
-        if response_last_index.status is not 200:
+        if response_last_index.status != 200:
             logging.error(f'Error {response_last_index.status} when getting last comic index from xkcd API')
             return False
 
@@ -118,13 +119,15 @@ class XkcdAsyncDownloader:
         logging.info(f'Last comic index (comic id): {last_index}')
         return last_index
 
-    async def __save_file_in_local_storage(self, comic_id: int, file_content: bytes,
-                                           file_extension: str) -> None:
+    async def __save_file_in_local_storage(
+        self, comic_id: int, file_content: bytes, file_extension: str
+    ) -> Union[None, bool]:
         file_name = f'{md5(file_content).hexdigest()}.{file_extension}'
         file_path = f'{self.DIRECTORY}/{file_name}'
 
         if os.path.isfile(file_path):
-            logging.info(f'File of comic id: {comic_id} alredy exits with name: {file_name}')
+            logging.info(f'File of comic id: {comic_id} already exits with name: {file_name}')
+            return
 
         try:
             async with aiofiles.open(file_path, 'wb') as f:
@@ -134,6 +137,7 @@ class XkcdAsyncDownloader:
                 f'Error {type(e).__name__} when save file image for '
                 f'comic id: {comic_id} with path: {file_path}'
             )
+            return
 
         logging.info(f'Comic id: {comic_id} has been saved with name: {file_name}')
         self.__count_of_saved_files += 1
