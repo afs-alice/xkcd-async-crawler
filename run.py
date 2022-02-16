@@ -1,7 +1,6 @@
 import time
 from src.xkcd_async_downloader import XkcdAsyncDownloader
 
-
 def main() -> None:
     start = time.perf_counter()
     instance = XkcdAsyncDownloader()
@@ -11,7 +10,6 @@ def main() -> None:
           ' comics image files has been downloaded and saved '
           f'in {instance.DIRECTORY}/')
     print('Execution time: {:.2f}s'.format(time.perf_counter() - start))
-
 
 if __name__ == '__main__':
     main()
